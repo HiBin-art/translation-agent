@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏翻译智能体</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #FF2442;
+            --secondary-color: #FFF6F6;
+            --text-color: #333333;
+            --border-color: #EBEDF0;
+            --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        body {
+            background-color: #FAFAFA;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            min-height: 100vh;
+            color: var(--text-color);
+        }
+        
+        .app-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 15px;
+        }
+        
+        .translation-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+        }
+        
+        .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin: 0;
+        }
+        
+        .language-controls {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            background-color: var(--secondary-color);
+        }
+        
+        .language-select {
+            background: white;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 14px;
+            color: var(--text-color);
+            width: auto;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23333' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 28px;
+        }
+        
+        .swap-btn {
+            background: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 12px;
+            color: var(--primary-color);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .swap-btn:hover {
+            transform: rotate(180deg);
+        }
+        
+        .text-area-container {
+            padding: 20px;
+        }
+        
+        .translation-box {
+            width: 100%;
+            height: 60px; /* 初始高度设为两行 */
+            border: none;
+            resize: none;
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text-color);
+            padding: 0;
+            margin-bottom: 20px;
+            overflow-y: hidden; /* 隐藏滚动条 */
+        }
+        
+        .translation-box:focus {
+            outline: none;
+        }
+        
+        .translation-box::placeholder {
+            color: #999;
+        }
+        
+        .result-box {
+            width: 100%;
+            min-height: 120px;
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text-color);
+            white-space: pre-wrap;
+            padding: 0;
+        }
+        
+        .divider {
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 20px 0;
+        }
+        
+        .btn-translate {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 24px;
+            padding: 12px 32px;
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-translate:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        
+        .btn-translate i {
+            margin-right: 8px;
+        }
+        
+        #loadingSpinner {
+            display: none;
+            margin-left: 8px;
+        }
+        
+        @media (max-width: 576px) {
+            .app-container {
+                margin: 10px auto;
+            }
+            
+            .translation-card {
+                border-radius: 12px;
+            }
+            
+            .card-header {
+                padding: 12px 16px;
+            }
+            
+            .text-area-container {
+                padding: 16px;
+            }
+            
+            .btn-translate {
+                width: 100%;
+            }
+        }
+        
+        .result-section {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .result-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            color: var(--text-color);
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .result-header i {
+            margin-right: 8px;
+            color: var(--primary-color);
+        }
+        
+        .result-content, .thinking-content {
+            width: 100%;
+            height: 60px; /* 初始高度设为两行 */
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text-color);
+            white-space: pre-wrap;
+            padding: 16px;
+            overflow-y: hidden; /* 隐藏滚动条 */
+            background-color: var(--secondary-color);
+            border-radius: 8px;
+        }
+        
+        .result-content.placeholder, .thinking-content.placeholder {
+            color: #999;
+            font-style: italic;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .explanation-section {
+            padding: 20px;
+            background-color: #fff6f0;
+        }
+        
+        .explanation-content {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #666;
+            padding: 16px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .explanation-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-color);
+        }
+        
+        .explanation-detail {
+            margin-bottom: 12px;
+            color: #744210;
+        }
+        
+        .context-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            background-color: var(--secondary-color);
+            color: var(--primary-color);
+            border-radius: 12px;
+            font-size: 12px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .thinking-section {
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .translation-section {
+            padding: 15px;
+            background-color: white;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .translation-result-section {
+            padding: 20px;
+            background-color: var(--secondary-color);
+            margin-top: 20px;
+            border-radius: 12px;
+            margin: 20px;
+        }
+        
+        .action-section {
+            padding: 20px;
+            text-align: center;
+            background-color: #fff;
+        }
+        
+        .text-area-container {
+            padding: 20px;
+            background-color: #fff;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .language-controls {
+            padding: 15px 20px;
+            background-color: #fff;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .text-area-container {
+            padding: 20px;
+            background-color: #fff;
+        }
+        
+        .action-section {
+            padding: 15px 20px;
+            text-align: center;
+            background-color: #fff;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .translation-result-section {
+            padding: 20px;
+            background-color: var(--secondary-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .thinking-section {
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .explanation-section {
+            padding: 20px;
+            background-color: #fff;
+        }
+        
+        .result-content {
+            background-color: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 16px;
+            line-height: 1.6;
+            min-height: 60px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .thinking-content {
+            width: 100%;
+            height: 60px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #2c5282;
+            white-space: pre-wrap;
+            padding: 16px;
+            background-color: white;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            transition: height 0.3s ease;
+            margin-bottom: 0;
+        }
+        
+        .thinking-content p {
+            margin: 0;
+            padding: 0 0 8px 0;
+        }
+        
+        .thinking-content p:last-child {
+            padding-bottom: 0;
+        }
+        
+        .thinking-content.placeholder {
+            color: #999;
+            font-style: italic;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background-color: var(--secondary-color);
+        }
+        
+        .analysis-section {
+            margin-bottom: 20px;
+        }
+        
+        .analysis-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 12px;
+        }
+        
+        .analysis-detail {
+            margin-left: 20px;
+            color: var(--text-color);
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+        
+        .analysis-paragraph {
+            color: var(--text-color);
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+        
+        .explanation-detail {
+            background-color: var(--secondary-color);
+            border-radius: 12px;
+            padding: 16px;
+        }
+        
+        .preset-section {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .preset-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .preset-term {
+            padding: 8px 12px;
+            background-color: var(--secondary-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        
+        .preset-term:hover {
+            background-color: #FFE9E9;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .preset-term::before {
+            content: "🔖";
+            margin-right: 8px;
+        }
+        
+        .search-preset {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        
+        .alert-section {
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            background-color: #e6f3ff;
+            color: #004085;
+        }
+        
+        .alert i {
+            margin-right: 8px;
+            font-size: 18px;
+        }
+        
+        .about-section {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+        }
+        
+        .section-header i {
+            margin-right: 8px;
+            transition: transform 0.3s ease;
+        }
+        
+        .collapsed .section-header i {
+            transform: rotate(-90deg);
+        }
+        
+        .collapsed #aboutContent,
+        .collapsed #valueContent {
+            display: none;
+        }
+        
+        .about-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .about-card h3 {
+            color: var(--primary-color);
+            margin: 0 0 12px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .about-card i {
+            margin-right: 8px;
+        }
+        
+        .about-card ul {
+            margin: 0;
+            padding-left: 20px;
+            columns: 2;
+            column-gap: 30px;
+        }
+        
+        .about-card li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+            break-inside: avoid-column;
+            padding-right: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .about-card ul {
+                columns: 1;
+            }
+        }
+        
+        .value-section {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+        }
+        
+        .value-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .value-card h3 {
+            color: var(--primary-color);
+            margin: 0 0 12px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .value-card i {
+            margin-right: 8px;
+        }
+        
+        .value-card ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .value-card li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+            color: #2c5282;
+        }
+        
+        .upload-btn {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 24px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 6px rgba(255, 36, 66, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .upload-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 12px rgba(255, 36, 66, 0.3);
+        }
+        
+        .upload-btn::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                120deg,
+                transparent,
+                rgba(255, 255, 255, 0.3),
+                transparent
+            );
+            transition: 0.5s;
+        }
+        
+        .upload-btn:hover::before {
+            left: 100%;
+        }
+        
+        .upload-btn i {
+            transition: transform 0.3s ease;
+        }
+        
+        .upload-btn:hover i {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="translation-card">
+            <div class="card-header">
+                <h1 class="card-title">游戏翻译智能体</h1>
+                <div class="upload-container">
+                    <label class="upload-btn">
+                        <i class="fas fa-file-upload"></i>
+                        <input type="file" id="fileUpload" hidden accept=".pdf,.docx,.xlsx,.txt">上传文档</label>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- 系统提示 -->
+            <div class="alert-section">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>使用提示：</strong>当前项目使用的训练数据较少，建议优先选择下方预设术语进行体验
+                </div>
+            </div>
+
+            <!-- 项目介绍 -->
+            <div class="about-section">
+                <div class="section-header" onclick="toggleSection('about')">
+                    <i class="fas fa-chevron-down"></i>
+                    <h3><i class="fas fa-robot"></i> 项目特性</h3>
+                </div>
+                <div class="about-card" id="aboutContent">
+                    <ul>
+                        <li>基于深度求索DeepSeek-R1大语言模型</li>
+                        <li>采用RAG（检索增强生成）技术架构</li>
+                        <li>使用Chroma向量数据库存储历史翻译</li>
+                        <li>支持PDF/Word/Excel多格式文档处理</li>
+                        <li>实时展示AI翻译思考过程</li>
+                        <li>支持术语参考和翻译解析</li>
+                        <li>自动记忆历史翻译内容</li>
+                        <li>基于LangChain构建文本处理流程</li>
+                        <li>使用ModelScope中文嵌入模型</li>
+                        <li>结合游戏背景知识库的智能翻译</li>
+                        <li>支持文化差异的本地化处理</li>
+                        <li>动态更新翻译记忆库</li>
+                        <li>多维度翻译质量评估</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- 项目价值 -->
+            <div class="value-section">
+                <div class="section-header" onclick="toggleSection('value')">
+                    <i class="fas fa-chevron-down"></i>
+                    <h3><i class="fas fa-star"></i> 核心价值</h3>
+                </div>
+                <div class="value-card" id="valueContent">
+                    <ul>
+                        <li>结合游戏世界观背景的精准翻译</li>
+                        <li>智能处理专有名词和文化差异</li>
+                        <li>持续优化的翻译记忆知识库</li>
+                        <li>透明化的AI翻译决策过程</li>
+                        <li>提升本地化效率达300%</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- 语言选择和输入部分 -->
+            <div class="language-controls">
+                <select class="language-select" id="sourceLang">
+                    <option value="英语">英语</option>
+                    <option value="中文">中文</option>
+                    <option value="日语">日语</option>
+                </select>
+                
+                <button class="swap-btn" id="swapLangBtn">
+                    <i class="fas fa-exchange-alt"></i>
+                </button>
+                
+                <select class="language-select" id="targetLang">
+                    <option value="中文">中文</option>
+                    <option value="英语">英语</option>
+                    <option value="日语">日语</option>
+                </select>
+            </div>
+            
+            <!-- 在语言选择部分下方添加预选内容面板 -->
+            <div class="preset-section">
+                <div class="result-header">
+                    <i class="fas fa-list"></i>
+                    <span>术语预选</span>
+                </div>
+                <div class="preset-content" id="presetTerms">
+                    <div class="preset-term" data-term="狭間の地の人">交界地居民 (inhabitants of The Lands Between)</div>
+                    <div class="preset-term" data-term="辺境人">边境民 (Fringefolk)</div>
+                    <div class="preset-term" data-term="星呼び">唤星者 (starcallers)</div>
+                    <div class="preset-term" data-term="亜人">亚人种 (demi-humans)</div>
+                    <div class="preset-term" data-term="泥人">泥人 (wretches)</div>
+                    <div class="preset-term" data-term="死に生きる者">死诞者 (those who have lived beyond death)</div>
+                    <div class="preset-term" data-term="地下墓地">地下墓地都落 (the roots of the Erdtree)</div>
+                    <div class="preset-term" data-term="放浪の民">游牧民族 (Nomad)</div>
+                </div>
+            </div>
+            
+            <!-- 输入文本区域 -->
+            <div class="text-area-container">
+                <textarea class="translation-box" id="sourceText" 
+                    placeholder="请输入要翻译的文本..."></textarea>
+            </div>
+            
+            <!-- 翻译按钮 -->
+            <div class="action-section">
+                <button class="btn-translate" id="translateBtn">
+                    <i class="fas fa-language"></i>
+                    <span>翻译</span>
+                    <span id="loadingSpinner" class="spinner-border spinner-border-sm"></span>
+                </button>
+            </div>
+            
+            <!-- 翻译结果部分 -->
+            <div class="translation-result-section">
+                <div class="result-header">
+                    <i class="fas fa-language"></i>
+                    <span>翻译结果</span>
+                </div>
+                <div class="result-content placeholder" id="translationResult">
+                    翻译结果将显示在这里...
+                </div>
+            </div>
+            
+            <!-- 思考链内容部分 -->
+            <div class="thinking-section">
+                <div class="result-header">
+                    <i class="fas fa-brain"></i>
+                    <span>思考链</span>
+                </div>
+                <div class="thinking-content placeholder" id="thinkingProcess">
+                    思考链内容将显示在这里...
+                </div>
+            </div>
+            
+            <!-- 翻译解析部分 -->
+            <div class="explanation-section">
+                <div class="result-header">
+                    <i class="fas fa-lightbulb"></i>
+                    <span>翻译解析</span>
+                </div>
+                <div class="explanation-content" id="translationExplanation">
+                    <div class="explanation-detail">翻译解析将显示在这里...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const translateBtn = document.getElementById('translateBtn');
+            const swapLangBtn = document.getElementById('swapLangBtn');
+            const sourceText = document.getElementById('sourceText');
+            const sourceLang = document.getElementById('sourceLang');
+            const targetLang = document.getElementById('targetLang');
+            const resultDiv = document.getElementById('translationResult');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const explanationDiv = document.getElementById('translationExplanation');
+            const thinkingDiv = document.getElementById('thinkingProcess');
+
+            // 添加累积变量
+            let accumulatedThinking = '';
+            let accumulatedAnalysis = '';
+            let currentTranslation = '';
+
+            // 翻译按钮点击事件
+            translateBtn.addEventListener('click', async function() {
+                if (!sourceText.value.trim()) {
+                    alert('请输入要翻译的文本');
+                    return;
+                }
+                
+                try {
+                    loadingSpinner.style.display = 'inline-block';
+                    resultDiv.textContent = '正在翻译...';
+                    resultDiv.classList.remove('placeholder');
+                    explanationDiv.innerHTML = '<div class="explanation-detail">正在分析...</div>';
+                    thinkingDiv.textContent = '正在思考...';
+                    thinkingDiv.classList.remove('placeholder');
+                    
+                    // 构建查询参数
+                    const params = new URLSearchParams({
+                        text: sourceText.value,
+                        source_lang: sourceLang.value,
+                        target_lang: targetLang.value
+                    });
+                    
+                    // 关闭之前的 SSE 连接（如果存在）
+                    if (window.translationEventSource) {
+                        window.translationEventSource.close();
+                    }
+                    
+                    // 创建新的 SSE 连接
+                    const eventSource = new EventSource(`/translate?${params.toString()}`);
+                    window.translationEventSource = eventSource;
+                    
+                    // 处理消息
+                    eventSource.onmessage = function(event) {
+                        try {
+                            const data = JSON.parse(event.data);
+                            console.log('Received data:', data);
+                            
+                            switch(data.type) {
+                                case 'thinking':
+                                    // 更新思考链内容
+                                    if (data.content) {
+                                        accumulatedThinking += data.content;
+                                        thinkingDiv.classList.remove('placeholder');
+                                        // 实时处理思考链内容
+                                        let lines = accumulatedThinking.split('\n');
+                                        let currentLine = lines[lines.length - 1] || '';
+                                        
+                                        // 如果是新行，添加新的 p 标签
+                                        if (data.content.includes('\n') || thinkingDiv.children.length === 0) {
+                                            lines.forEach((line, index) => {
+                                                // 只处理新行
+                                                if (index >= thinkingDiv.children.length) {
+                                                    const p = document.createElement('p');
+                                                    p.textContent = line;
+                                                    thinkingDiv.appendChild(p);
+                                                }
+                                            });
+                                        } else {
+                                            // 更新最后一行的内容
+                                            if (thinkingDiv.lastChild) {
+                                                thinkingDiv.lastChild.textContent = currentLine;
+                                            } else {
+                                                const p = document.createElement('p');
+                                                p.textContent = currentLine;
+                                                thinkingDiv.appendChild(p);
+                                            }
+                                        }
+                                        autoResize(thinkingDiv);
+                                    }
+                                    break;
+                                    
+                                case 'translation':
+                                    // 更新翻译结果
+                                    if (data.content) {
+                                        currentTranslation = data.content;
+                                        resultDiv.textContent = currentTranslation;
+                                        resultDiv.classList.remove('placeholder');
+                                    }
+                                    break;
+                                    
+                                case 'analysis':
+                                    // 更新翻译解析
+                                    if (data.content) {
+                                        accumulatedAnalysis = data.content;
+                                        explanationDiv.innerHTML = `
+                                            <div class="explanation-detail">
+                                                ${formatAnalysisContent(accumulatedAnalysis)}
+                                            </div>
+                                        `;
+                                    }
+                                    break;
+                                    
+                                case 'complete':
+                                    // 处理完整响应
+                                    const result = data.data;
+                                    
+                                    // 显示最终翻译结果
+                                    if (result.translation) {
+                                        resultDiv.textContent = result.translation;
+                                    }
+                                    
+                                    // 显示最终翻译解析
+                                    if (result.translation_reasoning) {
+                                        explanationDiv.innerHTML = `
+                                            <div class="explanation-detail">
+                                                ${formatAnalysisContent(result.translation_reasoning)}
+                                            </div>
+                                        `;
+                                    }
+                                    
+                                    // 保持现有的思考链内容，不需要重新设置
+                                    
+                                    // 重置累积变量
+                                    accumulatedAnalysis = '';
+                                    currentTranslation = '';
+                                    
+                                    // 关闭连接
+                                    eventSource.close();
+                                    loadingSpinner.style.display = 'none';
+                                    break;
+                                    
+                                case 'error':
+                                    // 处理错误
+                                    resultDiv.textContent = `错误: ${data.content}`;
+                                    resultDiv.classList.remove('placeholder');
+                                    thinkingDiv.textContent = '思考过程中断';
+                                    thinkingDiv.classList.remove('placeholder');
+                                    explanationDiv.innerHTML = '<div class="explanation-detail">处理过程中发生错误</div>';
+                                    eventSource.close();
+                                    loadingSpinner.style.display = 'none';
+                                    break;
+                            }
+                        } catch (error) {
+                            console.error('Error parsing SSE data:', error, event.data);
+                            resultDiv.textContent = '处理响应时发生错误';
+                            explanationDiv.innerHTML = '<div class="explanation-detail">数据解析错误</div>';
+                            eventSource.close();
+                            loadingSpinner.style.display = 'none';
+                        }
+                    };
+                    
+                    // 处理连接错误
+                    eventSource.onerror = function(error) {
+                        console.error('SSE Error:', error);
+                        resultDiv.textContent = '连接错误，请重试';
+                        explanationDiv.innerHTML = '<div class="explanation-detail">连接发生错误</div>';
+                        eventSource.close();
+                        loadingSpinner.style.display = 'none';
+                    };
+                    
+                } catch (error) {
+                    console.error('Translation error:', error);
+                    resultDiv.textContent = `发生错误: ${error.message}`;
+                    explanationDiv.innerHTML = '<div class="explanation-detail">处理过程中发生错误</div>';
+                    loadingSpinner.style.display = 'none';
+                }
+            });
+
+            // 语言切换按钮点击事件
+            swapLangBtn.addEventListener('click', function() {
+                const sourceValue = sourceLang.value;
+                const targetValue = targetLang.value;
+                sourceLang.value = targetValue;
+                targetLang.value = sourceValue;
+                
+                // 如果已有翻译结果，也交换文本
+                const sourceContent = sourceText.value;
+                const targetContent = resultDiv.textContent;
+                if (targetContent && targetContent !== '翻译结果将显示在这里...' && 
+                    targetContent !== '正在翻译...' && !targetContent.startsWith('错误')) {
+                    sourceText.value = targetContent;
+                    resultDiv.textContent = sourceContent;
+                }
+            });
+
+            // 添加键盘快捷键支持
+            document.addEventListener('keydown', function(e) {
+                // Ctrl/Cmd + Enter 触发翻译
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    translateBtn.click();
+                }
+            });
+
+            // 修改 autoResize 函数使其更通用
+            function autoResize(element) {
+                element.style.height = 'auto';
+                const lineHeight = parseInt(window.getComputedStyle(element).lineHeight);
+                const minHeight = lineHeight * 2; // 两行的高度
+                const maxHeight = 400; // 最大高度
+                
+                // 计算实际内容高度
+                let contentHeight;
+                if (element.classList.contains('thinking-content')) {
+                    // 对于思考链内容，计算所有子元素的总高度
+                    contentHeight = Array.from(element.children).reduce((total, p) => {
+                        const style = window.getComputedStyle(p);
+                        return total + p.offsetHeight + 
+                            parseInt(style.paddingTop) + 
+                            parseInt(style.paddingBottom);
+                    }, 0);
+                    // 添加容器的内边距
+                    contentHeight += parseInt(window.getComputedStyle(element).paddingTop) +
+                                   parseInt(window.getComputedStyle(element).paddingBottom);
+                    // 添加额外空间确保最后一行可见
+                    contentHeight += lineHeight / 2;
+                } else {
+                    contentHeight = element.scrollHeight;
+                }
+                
+                const newHeight = Math.min(Math.max(contentHeight, minHeight), maxHeight);
+                element.style.height = newHeight + 'px';
+                
+                // 如果内容超出最大高度，添加滚动
+                element.style.overflowY = contentHeight > maxHeight ? 'auto' : 'hidden';
+                
+                // 如果是思考链内容，自动滚动到底部
+                if (element.classList.contains('thinking-content') && 
+                    contentHeight > maxHeight) {
+                    element.scrollTop = element.scrollHeight;
+                    // 确保最后一行完全可见
+                    element.scrollTop += lineHeight;
+                }
+            }
+
+            // 为源文本框添加自动调整高度
+            sourceText.addEventListener('input', function() {
+                autoResize(this);
+            });
+
+            // 监听翻译结果变化来调整结果框高度
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.target.id === 'translationResult') {
+                        const element = mutation.target;
+                        autoResize(element);
+                    }
+                });
+            });
+
+            observer.observe(resultDiv, {
+                childList: true,
+                characterData: true,
+                subtree: true
+            });
+
+            // 添加对思考链内容的监听
+            const thinkingObserver = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.target.id === 'thinkingProcess') {
+                        const element = mutation.target;
+                        autoResize(element);
+                    }
+                });
+            });
+            
+            thinkingObserver.observe(thinkingDiv, {
+                childList: true,
+                characterData: true,
+                subtree: true
+            });
+
+            // 初始化时设置文本框高度
+            autoResize(sourceText);
+
+            // 在页面卸载时关闭 SSE 连接
+            window.addEventListener('beforeunload', function() {
+                if (window.translationEventSource) {
+                    window.translationEventSource.close();
+                }
+            });
+
+            // 在DOM加载完成后添加
+            const presetTerms = document.querySelectorAll('.preset-term');
+            
+            presetTerms.forEach(term => {
+                term.addEventListener('click', function() {
+                    const selectedTerm = this.getAttribute('data-term');
+                    sourceText.value = selectedTerm;
+                    autoResize(sourceText);
+                    translateBtn.click();  // 自动触发翻译
+                });
+            });
+
+            // 添加术语搜索功能
+            const searchPreset = document.createElement('input');
+            searchPreset.placeholder = "搜索术语...";
+            searchPreset.classList.add('search-preset');
+            document.querySelector('.preset-section').insertBefore(searchPreset, document.querySelector('#presetTerms'));
+
+            // 术语搜索功能
+            searchPreset.addEventListener('input', function() {
+                const searchText = this.value.toLowerCase();
+                presetTerms.forEach(term => {
+                    const termText = term.textContent.toLowerCase();
+                    term.style.display = termText.includes(searchText) ? 'block' : 'none';
+                });
+            });
+
+            // 在页面加载时初始化折叠状态
+            toggleSection('about', true);
+            toggleSection('value', true);
+
+            // 文件上传处理
+            document.getElementById('fileUpload').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                // 显示上传状态
+                const uploadBtn = document.querySelector('.upload-btn');
+                uploadBtn.innerHTML = `
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>正在处理 ${file.name}</span>
+                `;
+                
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('上传失败: ' + data.error);
+                    } else {
+                        alert('文件处理成功！已更新翻译知识库');
+                    }
+                })
+                .catch(error => {
+                    console.error('上传错误:', error);
+                    alert('文件上传失败');
+                })
+                .finally(() => {
+                    uploadBtn.innerHTML = '<i class="fas fa-file-upload"></i> 上传文件';
+                    e.target.value = '';
+                });
+            });
+        });
+
+        // 切换章节显示状态
+        function toggleSection(sectionId, forceOpen) {
+            const section = document.querySelector(`#${sectionId}Content`).parentElement;
+            const isCollapsed = section.classList.contains('collapsed');
+            
+            if (typeof forceOpen !== 'undefined') {
+                if (forceOpen) {
+                    section.classList.remove('collapsed');
+                } else {
+                    section.classList.add('collapsed');
+                }
+            } else {
+                section.classList.toggle('collapsed');
+            }
+        }
+
+        function formatAnalysisContent(content) {
+            if (!content) return '';
+            
+            // 将内容按行分割
+            const lines = content.split('\n');
+            let formattedHtml = '';
+            let inList = false;
+            
+            for (let line of lines) {
+                line = line.trim();
+                if (!line) continue;
+                
+                if (line.match(/^\d+\./)) {
+                    // 处理数字编号的段落
+                    if (!inList) {
+                        formattedHtml += '<div class="analysis-section">';
+                        inList = true;
+                    }
+                    formattedHtml += `<h4 class="analysis-title">${line}</h4>`;
+                } else if (line.startsWith('-')) {
+                    // 处理破折号开头的内容
+                    const content = line.substring(1).trim();
+                    formattedHtml += `<p class="analysis-detail">${content}</p>`;
+                } else {
+                    // 处理普通段落
+                    if (inList) {
+                        formattedHtml += '</div>';
+                        inList = false;
+                    }
+                    formattedHtml += `<p class="analysis-paragraph">${line}</p>`;
+                }
+            }
+            
+            if (inList) {
+                formattedHtml += '</div>';
+            }
+            
+            return formattedHtml;
+        }
+    </script>
+</body>
+</html> 
